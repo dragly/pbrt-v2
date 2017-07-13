@@ -82,8 +82,8 @@ string DirectoryContaining(const string &filename)
     char dir[_MAX_DIR];
     char ext[_MAX_EXT];
 
-    errno_t err = _splitpath_s( filename.c_str(),
-                                drive, _MAX_DRIVE, dir, _MAX_DIR, NULL, 0, ext, _MAX_EXT );
+    errno_t err = _splitpath_s(filename.c_str(),
+                               drive, _MAX_DRIVE, dir, _MAX_DIR, NULL, 0, ext, _MAX_EXT);
     if (err == 0) {
         char fullDir[_MAX_PATH];
         err = _makepath_s(fullDir, _MAX_PATH, drive, dir, NULL, NULL);
@@ -139,4 +139,11 @@ void SetSearchDirectory(const string &dirname) {
 }
 
 
+void RemoveString(string& s, const string& p) {
+    string::size_type n = p.length();
 
+    for (string::size_type i = s.find(p);
+         i != string::npos;
+         i = s.find(p))
+        s.erase(i, n);
+}

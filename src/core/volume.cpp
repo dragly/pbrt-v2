@@ -1,6 +1,7 @@
 
 /*
     pbrt source code Copyright(c) 1998-2012 Matt Pharr and Greg Humphreys.
+                                  2012-2015 Marwan Abdellah.
 
     This file is part of pbrt.
 
@@ -33,6 +34,7 @@
 // core/volume.cpp*
 #include "stdafx.h"
 #include "volume.h"
+#include <limits>
 
 // Volume Scattering Local Definitions
 struct MeasuredSS {
@@ -115,8 +117,14 @@ static float RdToAlphap(float reflectance, float A) {
         Assert(kd0 <= reflectance && kd1 >= reflectance);
         float alphaMid = (alphaLow + alphaHigh) * 0.5f;
         float kd = RdIntegral(alphaMid, A);
-        if (kd < reflectance) { alphaLow = alphaMid;  kd0 = kd; }
-        else                  { alphaHigh = alphaMid; kd1 = kd; }
+        if (kd < reflectance) {
+            alphaLow = alphaMid;
+            kd0 = kd;
+        }
+        else {
+            alphaHigh = alphaMid;
+            kd1 = kd;
+        }
     }
     return (alphaLow + alphaHigh) * 0.5f;
 }
@@ -166,12 +174,185 @@ float PhaseSchlick(const Vector &w, const Vector &wp, float g) {
 
 
 VolumeRegion::~VolumeRegion() {
+    // Clear data
 }
 
 
-Spectrum VolumeRegion::sigma_t(const Point &p, const Vector &w,
+void VolumeRegion::PreProcess() {
+    // Preprocess data
+}
+
+
+void VolumeRegion::ValidateData() const {
+    // Validate data
+}
+
+
+bool VolumeRegion::HasNonClearedFluorescentVolumes() const {
+    return true;
+}
+
+
+bool VolumeRegion::SkipEmptySpace(const Ray &r, float *tSkip) const {
+    Severe("Unimplemented VolumeRegion::SkipEmptySpace() method called");
+    return 0.f;
+}
+
+
+float VolumeRegion::PhotonDensity(const Point &p) const {
+    Severe("Unimplemented VolumeRegion::PhotonDensity() method called");
+    return 0.f;
+}
+
+
+Spectrum VolumeRegion::Mu(const Point &p, const Vector &wo, float t) const {
+    return 0.f;
+}
+
+
+float VolumeRegion::Sigma_af(const Point &p, const Vector &wo, float t,
+        const int &wl) const {
+    return 0.f;
+}
+
+Spectrum VolumeRegion::Sigma_af(const Point &p, const Vector &wo, float t) const {
+    return 0.f;
+}
+
+
+float VolumeRegion::Mu(const Point &p, const Vector &wo, float t,
+        const int &wl) const {
+    return 0.f;
+}
+
+
+Spectrum VolumeRegion::Sigma_t(const Point &p, const Vector &w,
                                float time) const {
-    return sigma_a(p, w, time) + sigma_s(p, w, time);
+    return Sigma_a(p, w, time) + Sigma_af(p, w, time) + Sigma_s(p, w, time);
+}
+
+
+float VolumeRegion::Sigma_t(const Point &p, const Vector &w,
+                            float time, const int &wl) const {
+    return Sigma_a(p, w, time, wl) + Sigma_af(p, w, time, wl) +
+            Sigma_s(p, w, time, wl);
+}
+
+
+Spectrum VolumeRegion::Lve(const Point &p, const Vector &wo, float t) const {
+    return 0.f;
+}
+
+
+float VolumeRegion::p(const Point &p, const Vector &wi, const Vector &wo,
+                float t) const {
+    return 0.f;
+}
+
+
+Spectrum VolumeRegion::STER(const Point &p, const Vector &w, float time) const {
+    Severe("Unimplemented VolumeRegion::STER() method called");
+    return 0.f;
+}
+
+
+Spectrum VolumeRegion::ATER(const Point &p, const Vector &w, float time) const {
+    Severe("Unimplemented VolumeRegion::ATER() method called");
+    return 0.f;
+}
+
+
+float VolumeRegion::STER(const Point &p, const Vector &wo, float t,
+        const int &wl) const {
+    Severe("Unimplemented VolumeRegion::STER() method called");
+    return 0.f;
+}
+
+
+float VolumeRegion::ATER(const Point &p, const Vector &wo, float t,
+        const int &wl) const {
+    Severe("Unimplemented VolumeRegion::ATER() method called");
+    return 0.f;
+}
+
+
+float VolumeRegion::Lve(const Point &p, const Vector &wo, float t,
+        const int &wl) const {
+    return 0.f;
+}
+
+
+Spectrum VolumeRegion::MaxSigma_t() const {
+    Severe("Unimplemented VolumeRegion::MaxSigma_t() method called");
+    return 0.f;
+}
+
+
+float VolumeRegion::MaxSigma_t(const int &wl) const {
+    Severe("Unimplemented VolumeRegion::MaxSigma_t() method called");
+    return 0.f;
+}
+
+
+bool VolumeRegion::IsFluorescent() const {
+    return false;
+}
+
+
+float VolumeRegion::Fluorescence(const Point &p) const {
+    return 0.f;
+}
+
+
+Spectrum VolumeRegion::fEx(const Point &p) const {
+    return 0.f;
+}
+
+
+Spectrum VolumeRegion::fEm(const Point &p) const {
+    return 0.f;
+}
+
+
+float VolumeRegion::Yeild(const Point &p) const {
+    return 0.f;
+}
+
+
+float VolumeRegion::pf(const Point &p, const Vector &wi, const Vector &wo,
+            float t) const {
+    return 0.f;
+}
+
+
+float VolumeRegion::fEx(const Point &p, const int &wl) const {
+    return 0.f;
+}
+
+
+float VolumeRegion::fEm(const Point &p, const int &wl) const {
+    return 0.f;
+}
+
+
+bool VolumeRegion::SampleDistance(const Ray &, float *, Point &, float *,
+        RNG &) const {
+    Severe("Unimplemented VolumeRegion::SampleDistance() method called");
+    return false;
+}
+
+
+bool VolumeRegion::SampleDistance(const Ray &, float *, Point &, float *, RNG &,
+        const int &) const {
+    Severe("Unimplemented VolumeRegion::SampleDistance() method called");
+    return false;
+}
+
+
+bool VolumeRegion::SampleDirection(const Point &, const Vector&, Vector &,
+        float *, RNG &) const {
+    Severe("Unimplemented VolumeRegion::SampleDirection() method called");
+    return false;
 }
 
 
@@ -182,19 +363,126 @@ AggregateVolume::AggregateVolume(const vector<VolumeRegion *> &r) {
 }
 
 
-Spectrum AggregateVolume::sigma_a(const Point &p, const Vector &w,
+float AggregateVolume::Density(const Point &Pobj) const {
+    float d = 0.;
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        d += regions[i]->Density(Pobj);
+    return d;
+}
+
+
+float AggregateVolume::PhotonDensity(const Point &p) const {
+    float d = 0.;
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        d += regions[i]->PhotonDensity(p);
+    return d;
+}
+
+
+bool AggregateVolume::HasNonClearedFluorescentVolumes() const {
+    for (uint32_t i = 0; i < regions.size(); ++i) {
+        if(regions[i]->HasNonClearedFluorescentVolumes())
+            return true;
+    }
+    return false;
+}
+
+
+float AggregateVolume::Fluorescence(const Point &Pobj) const {
+    bool flu = false;
+    for (uint32_t i = 0; i < regions.size(); ++i) {
+        if(regions[i]->Fluorescence(Pobj))
+            flu |= true;
+        else flu |= false;
+    }
+    return flu;
+}
+
+
+Spectrum AggregateVolume::MaxSigma_t() const {
+    Spectrum sigma_t(0.f);
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        if (regions[i]->MaxSigma_t().y() > sigma_t.y())
+            sigma_t = regions[i]->MaxSigma_t();
+    return sigma_t;
+}
+
+
+float AggregateVolume::MaxSigma_t(const int &wl) const {
+    float sigma_t(0.f);
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        if (regions[i]->MaxSigma_t().Power(wl) > sigma_t)
+            sigma_t = regions[i]->MaxSigma_t(wl);
+    return sigma_t;
+}
+
+
+Spectrum AggregateVolume::Sigma_a(const Point &p, const Vector &w,
                                   float time) const {
     Spectrum s(0.);
     for (uint32_t i = 0; i < regions.size(); ++i)
-        s += regions[i]->sigma_a(p, w, time);
+        s += regions[i]->Sigma_a(p, w, time);
     return s;
 }
 
 
-Spectrum AggregateVolume::sigma_s(const Point &p, const Vector &w, float time) const {
+float AggregateVolume::Sigma_a(const Point &p, const Vector &w,
+                               float time, const int &wl) const {
+    float s(0.);
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        s += regions[i]->Sigma_a(p, w, time, wl);
+    return s;
+}
+
+
+Spectrum AggregateVolume::Sigma_af(const Point &p, const Vector &w,
+                                  float time) const {
     Spectrum s(0.);
     for (uint32_t i = 0; i < regions.size(); ++i)
-        s += regions[i]->sigma_s(p, w, time);
+        s += regions[i]->Sigma_af(p, w, time);
+    return s;
+}
+
+
+float AggregateVolume::Sigma_af(const Point &p, const Vector &w,
+                                float time, const int &wl) const {
+    float s(0.);
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        s += regions[i]->Sigma_af(p, w, time, wl);
+    return s;
+}
+
+
+Spectrum AggregateVolume::Sigma_s(const Point &p, const Vector &w, float time) const {
+    Spectrum s(0.);
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        s += regions[i]->Sigma_s(p, w, time);
+    return s;
+}
+
+
+float AggregateVolume::Sigma_s(const Point &p, const Vector &w,
+                                float time, const int &wl) const {
+    float s(0.);
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        s += regions[i]->Sigma_s(p, w, time, wl);
+    return s;
+}
+
+
+Spectrum AggregateVolume::Mu(const Point &p, const Vector &w, float time) const {
+    Spectrum s(0.);
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        s += regions[i]->Mu(p, w, time);
+    return s;
+}
+
+
+float AggregateVolume::Mu(const Point &p, const Vector &w,
+                                float time, const int &wl) const {
+    float s(0.);
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        s += regions[i]->Mu(p, w, time, wl);
     return s;
 }
 
@@ -207,11 +495,20 @@ Spectrum AggregateVolume::Lve(const Point &p, const Vector &w, float time) const
 }
 
 
+float AggregateVolume::Lve(const Point &p, const Vector &w, float time,
+                           const int &wl) const {
+    float L(0.);
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        L += regions[i]->Lve(p, w, time, wl);
+    return L;
+}
+
+
 float AggregateVolume::p(const Point &p, const Vector &w, const Vector &wp,
         float time) const {
     float ph = 0, sumWt = 0;
     for (uint32_t i = 0; i < regions.size(); ++i) {
-        float wt = regions[i]->sigma_s(p, w, time).y();
+        float wt = regions[i]->Sigma_s(p, w, time).y();
         sumWt += wt;
         ph += wt * regions[i]->p(p, w, wp, time);
     }
@@ -219,10 +516,105 @@ float AggregateVolume::p(const Point &p, const Vector &w, const Vector &wp,
 }
 
 
-Spectrum AggregateVolume::sigma_t(const Point &p, const Vector &w, float time) const {
+float AggregateVolume::pf(const Point &p, const Vector &w, const Vector &wp,
+        float time) const {
+    float ph = 0, sumWt = 0;
+    for (uint32_t i = 0; i < regions.size(); ++i) {
+        float wt = regions[i]->Sigma_s(p, w, time).y();
+        sumWt += wt;
+        ph += wt * regions[i]->pf(p, w, wp, time);
+    }
+    return ph / sumWt;
+}
+
+
+Spectrum AggregateVolume::Sigma_t(const Point &p, const Vector &w, float time) const {
     Spectrum s(0.);
     for (uint32_t i = 0; i < regions.size(); ++i)
-        s += regions[i]->sigma_t(p, w, time);
+        s += regions[i]->Sigma_t(p, w, time);
+    return s;
+}
+
+
+float AggregateVolume::Sigma_t(const Point &p, const Vector &w, float time,
+                               const int &wl) const {
+    float s(0.);
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        s += regions[i]->Sigma_t(p, w, time, wl);
+    return s;
+}
+
+
+Spectrum AggregateVolume::fEx(const Point &p) const {
+    Spectrum s(0.);
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        s += regions[i]->fEx(p);
+    return s;
+}
+
+
+float AggregateVolume::fEx(const Point &p, const int &wl) const {
+    float s(0.);
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        s += regions[i]->fEx(p, wl);
+    return s;
+}
+
+
+Spectrum AggregateVolume::fEm(const Point &p) const {
+    Spectrum s(0.);
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        s += regions[i]->fEm(p);
+    return s;
+}
+
+
+float AggregateVolume::fEm(const Point &p, const int &wl) const {
+    float s(0.);
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        s += regions[i]->fEm(p, wl);
+    return s;
+}
+
+
+float AggregateVolume::Yeild(const Point &p) const {
+    float f = 0.f;
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        f += regions[i]->Yeild(p);
+    return f;
+}
+
+
+Spectrum AggregateVolume::STER(const Point &p, const Vector &w, float time) const {
+    Spectrum s(0.);
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        s += regions[i]->STER(p, w, time);
+    return s;
+}
+
+
+float AggregateVolume::STER(const Point &p, const Vector &w, float time,
+                              const int &wl) const {
+    float s(0.);
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        s += regions[i]->STER(p, w, time, wl);
+    return s;
+}
+
+
+Spectrum AggregateVolume::ATER(const Point &p, const Vector &w, float time) const {
+    Spectrum s(0.);
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        s += regions[i]->ATER(p, w, time);
+    return s;
+}
+
+
+float AggregateVolume::ATER(const Point &p, const Vector &w, float time,
+                              const int &wl) const {
+    float s(0.);
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        s += regions[i]->ATER(p, w, time, wl);
     return s;
 }
 
@@ -231,6 +623,15 @@ Spectrum AggregateVolume::tau(const Ray &ray, float step, float offset) const {
     Spectrum t(0.);
     for (uint32_t i = 0; i < regions.size(); ++i)
         t += regions[i]->tau(ray, step, offset);
+    return t;
+}
+
+
+float AggregateVolume::tauLambda(const Ray &ray, float step, float offset,
+                                 const int &wl) const {
+    float t(0.);
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        t += regions[i]->tauLambda(ray, step, offset, wl);
     return t;
 }
 
@@ -247,6 +648,44 @@ bool AggregateVolume::IntersectP(const Ray &ray,
         }
     }
     return (*t0 < *t1);
+}
+
+bool AggregateVolume::SkipEmptySpace(const Ray &ray, float *tSkip) const {
+    // Find the intersection between the ray and the volume regions
+    float t0, t1;
+    if(IntersectP(ray, &t0, &t1)) {
+        *tSkip = t0; // For the moment, this works with the homogeneous volumes.
+        // TODO: Update for heterogeneous data.
+    }
+    return false;
+}
+
+
+bool AggregateVolume::SampleDistance(const Ray &ray, float* tDist,
+                                     Point &Psample, float* pdf, RNG &rng) const {
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        if(regions[i]->SampleDistance(ray, tDist, Psample, pdf, rng))
+            return true;
+    return false;
+}
+
+
+bool AggregateVolume::SampleDistance(const Ray &ray, float* tDist,
+                                     Point &Psample, float* pdf, RNG &rng,
+                                     const int& wl) const {
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        if(regions[i]->SampleDistance(ray, tDist, Psample, pdf, rng, wl))
+            return true;
+    return false;
+}
+
+
+bool AggregateVolume::SampleDirection(const Point& p, const Vector& wi,
+                                      Vector& wo, float* pdf, RNG &rng) const {
+    for (uint32_t i = 0; i < regions.size(); ++i)
+        if(regions[i]->SampleDirection(p, wi, wo, pdf, rng))
+            return true;
+    return false;
 }
 
 
@@ -293,8 +732,7 @@ void SubsurfaceFromDiffuse(const Spectrum &Kd, float meanPathLength,
 }
 
 
-Spectrum DensityRegion::tau(const Ray &r, float stepSize,
-                            float u) const {
+Spectrum DensityRegion::tau(const Ray &r, float stepSize, float u) const {
     float t0, t1;
     float length = r.d.Length();
     if (length == 0.f) return 0.f;
@@ -303,10 +741,25 @@ Spectrum DensityRegion::tau(const Ray &r, float stepSize,
     Spectrum tau(0.);
     t0 += u * stepSize;
     while (t0 < t1) {
-        tau += sigma_t(rn(t0), -rn.d, r.time);
+        tau += Sigma_t(rn(t0), -rn.d, r.time);
         t0 += stepSize;
     }
     return tau * stepSize;
 }
 
 
+float DensityRegion::tauLambda(const Ray &r, float stepSize, float u,
+                               const int &wl) const {
+    float t0, t1;
+    float length = r.d.Length();
+    if (length == 0.f) return 0.f;
+    Ray rn(r.o, r.d / length, r.mint * length, r.maxt * length, r.time);
+    if (!IntersectP(rn, &t0, &t1)) return 0.;
+    float tau(0.);
+    t0 += u * stepSize;
+    while (t0 < t1) {
+        tau += Sigma_t(rn(t0), -rn.d, r.time, wl);
+        t0 += stepSize;
+    }
+    return tau * stepSize;
+}

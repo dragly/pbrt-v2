@@ -51,6 +51,7 @@ public:
     bool IntersectP(const Ray &ray) const;
     float Area() const;
     Point Sample(float u1, float u2, Normal *Ns) const;
+    bool Projects(const Point &p, Point &ps, Normal &ns) const;
 private:
     // Disk Private Data
     float height, radius, innerRadius, phiMax;

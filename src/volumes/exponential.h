@@ -1,6 +1,7 @@
 
 /*
     pbrt source code Copyright(c) 1998-2012 Matt Pharr and Greg Humphreys.
+                                  2012-2015 Marwan Abdellah.
 
     This file is part of pbrt.
 
@@ -43,23 +44,69 @@
 class ExponentialDensity : public DensityRegion {
 public:
     // ExponentialDensity Public Methods
-    ExponentialDensity(const Spectrum &sa, const Spectrum &ss,
-                       float gg, const Spectrum &emit, const BBox &e,
+    ExponentialDensity(const Spectrum &sa, const Spectrum &ss, float gg,
+                       const Spectrum &em, const BBox &e,
                        const Transform &v2w, float aa, float bb,
                        const Vector &up)
-        : DensityRegion(sa, ss, gg, emit, v2w), extent(e), a(aa), b(bb) {
+        : DensityRegion(sa, ss, gg, em, v2w), extent(e), a(aa), b(bb) {
         upDir = Normalize(up);
     }
+
+    // Geometry
     BBox WorldBound() const { return Inverse(WorldToVolume)(extent); }
     bool IntersectP(const Ray &r, float *t0, float *t1) const {
         Ray ray = WorldToVolume(r);
         return extent.IntersectP(ray, t0, t1);
     }
+    bool SkipEmptySpace(const Ray &ray, float *tSkip) const {
+        Warning("Unimplemented method");
+        return false;
+    }
+
+    // Data
     float Density(const Point &Pobj) const {
-        if (!extent.Inside(Pobj)) return 0;
+        if (!extent.Inside(Pobj)) return 0.f;
         float height = Dot(Pobj - extent.pMin, upDir);
         return a * expf(-b * height);
     }
+
+    float PhotonDensity(const Point &p) const {
+        const Point Pobj = WorldToVolume(p);
+        return Density(Pobj);
+    }
+
+    // Optical Properties
+    Spectrum MaxSigma_t() const {
+        Warning("Unimplemented method");
+        return 0.f;
+    }
+
+    // Optical Properties at Specific Wavelength _wl_
+    float MaxSigma_t(const int &wl) const {
+        Warning("Unimplemented method");
+        return 0.f;
+    }
+
+    // Medium Sampling
+    bool SampleDistance(const Ray& ray, float* tDis, Point& Psample,
+            float* pdf, RNG &rng) const {
+        Warning("Unimplemented method");
+        return false;
+    }
+    bool SampleDirection(const Point &p, const Vector& wi, Vector& wo,
+            float* pdf, RNG &rng) const {
+        Warning("Unimplemented method");
+        return false;
+    }
+
+    // Medium Sampling at Specific Wavelength _wl_
+    bool SampleDistance(const Ray& ray, float* tDis, Point& Psample,
+            float* pdf, RNG &rng, const int &wl) const {
+        Warning("Unimplemented method");
+        return false;
+    }
+
+
 private:
     // ExponentialDensity Private Data
     BBox extent;

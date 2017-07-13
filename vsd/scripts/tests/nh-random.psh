@@ -1,0 +1,13 @@
+EventsCount=1000000
+XCenter=-0.000003
+YCenter=8.500020
+ZCenter=1.499995
+XCOI=0.000157
+YCOI=8.488881
+ZCOI=1.502467
+AABBWidth=19.999984
+AABBHeight=22.999917
+AABBDepth=4.999982
+VSDPositionFile=nh-random.psp
+VSDIntensityFile=nh-random.psi
+TimeStep=0

@@ -1,6 +1,7 @@
 
 /*
     pbrt source code Copyright(c) 1998-2012 Matt Pharr and Greg Humphreys.
+                                  2012-2015 Marwan Abdellah.
 
     This file is part of pbrt.
 
@@ -37,6 +38,7 @@
 #include "paramset.h"
 #include "spectrum.h"
 #include "scene.h"
+#include "sensor.h"
 #include "renderer.h"
 #include "film.h"
 #include "volume.h"
@@ -49,6 +51,7 @@
 #include "cameras/environment.h"
 #include "cameras/orthographic.h"
 #include "cameras/perspective.h"
+#include "cameras/telecentric.h"
 #include "film/image.h"
 #include "filters/box.h"
 #include "filters/gaussian.h"
@@ -66,8 +69,28 @@
 #include "integrators/path.h"
 #include "integrators/photonmap.h"
 #include "integrators/single.h"
+#include "integrators/fluorescencesingle.h"
+#include "integrators/fluorescencesinglerwl.h"
+#include "integrators/sensor.h"
+#include "integrators/volpath.h"
+#include "integrators/volbdpt.h"
 #include "integrators/useprobes.h"
 #include "integrators/whitted.h"
+#include "integrators/vsd.h"
+
+#include "integrators/vsdfds.h"
+#include "integrators/vsdfls.h"
+#include "integrators/vsdfss.h"
+
+#include "integrators/vsdbdg.h"
+#include "integrators/vsdblg.h"
+#include "integrators/vsdbsg.h"
+
+#include "integrators/vsdlinear.h"
+#include "integrators/vsdlinearsprite.h"
+#include "integrators/vsdscattering.h"
+#include "integrators/vpl.h"
+#include "lights/collimated.h"
 #include "lights/diffuse.h"
 #include "lights/distant.h"
 #include "lights/goniometric.h"
@@ -107,6 +130,7 @@
 #include "shapes/loopsubdiv.h"
 #include "shapes/nurbs.h"
 #include "shapes/paraboloid.h"
+#include "shapes/rectangle.h"
 #include "shapes/sphere.h"
 #include "shapes/trianglemesh.h"
 #include "textures/bilerp.h"
@@ -121,9 +145,20 @@
 #include "textures/uv.h"
 #include "textures/windy.h"
 #include "textures/wrinkled.h"
+#include "volumes/absorbing.h"
+#include "volumes/binarygrid.h"
+#include "volumes/annotatedgrid.h"
+#include "volumes/fluorescentbinarygrid.h"
 #include "volumes/exponential.h"
+#include "volumes/fluorescent.h"
+#include "volumes/fluorescentscattering.h"
+#include "volumes/fluorescentgrid.h"
+#include "volumes/fluorescentannotatedgrid.h"
+#include "volumes/heterogeneous.h"
 #include "volumes/homogeneous.h"
-#include "volumes/volumegrid.h"
+#include "volumes/grid.h"
+#include "volumes/vsdgrid.h"
+
 #include <map>
  #if (_MSC_VER >= 1400)
  #include <stdio.h>
@@ -188,6 +223,7 @@ struct RenderOptions {
     TransformSet CameraToWorld;
     vector<Light *> lights;
     vector<Reference<Primitive> > primitives;
+    vector<Sensor *> sensors;
     mutable vector<VolumeRegion *> volumeRegions;
     map<string, vector<Reference<Primitive> > > instances;
     vector<Reference<Primitive> > *currentInstance;
@@ -329,6 +365,9 @@ Reference<Shape> MakeShape(const string &name,
     else if (name == "disk")
         s = CreateDiskShape(object2world, world2object, reverseOrientation,
                             paramSet);
+    else if (name == "rectangle")
+        s = CreateRectangleShape(object2world, world2object, reverseOrientation,
+                            paramSet);
     else if (name == "cone")
         s = CreateConeShape(object2world, world2object, reverseOrientation,
                             paramSet);
@@ -354,6 +393,27 @@ Reference<Shape> MakeShape(const string &name,
         Warning("Shape \"%s\" unknown.", name.c_str());
     paramSet.ReportUnused();
     return s;
+}
+
+
+Shape *MakeSensorSurfaceShape(const string &name,
+                              const Transform *object2world,
+                              const Transform *world2object,
+                              bool reverseOrientation,
+                              const ParamSet &paramSet) {
+    if (name == "disk")
+        return CreateDiskShape(object2world, world2object,
+                            reverseOrientation, paramSet);
+    if (name == "rectangle")
+        return CreateRectangleShape(object2world, world2object,
+                                    reverseOrientation, paramSet);
+    Error("Sensor shape \"%s\" unknown. Exiting", name.c_str());
+    exit(0);
+}
+
+
+Sensor* MakeSensor(const string &name, Shape* shape, const ParamSet &paramSet) {
+    return  CreateSensor(name, shape, paramSet);
 }
 
 
@@ -507,6 +567,8 @@ AreaLight *MakeAreaLight(const string &name,
     AreaLight *area = NULL;
     if (name == "area" || name == "diffuse")
         area = CreateDiffuseAreaLight(light2world, paramSet, shape);
+    else if (name == "collimated" || name == "laser")
+        area = CreateCollimatedAreaLight(light2world, paramSet, shape);
     else
         Warning("Area light \"%s\" unknown.", name.c_str());
     paramSet.ReportUnused();
@@ -519,10 +581,32 @@ VolumeRegion *MakeVolumeRegion(const string &name,
     VolumeRegion *vr = NULL;
     if (name == "homogeneous")
         vr = CreateHomogeneousVolumeDensityRegion(volume2world, paramSet);
-    else if (name == "volumegrid")
-        vr = CreateGridVolumeRegion(volume2world, paramSet);
+    else if (name == "heterogeneous")
+        vr = CreateHeterogeneousVolumeDensityRegion(volume2world, paramSet);
+    else if (name == "absorbing")
+        vr = CreateAbsorbingVolumeRegion(volume2world, paramSet);
+    else if (name == "volumegrid") {
+        if (paramSet.FindOneBool("is_fluorescent", false))
+            vr = CreateFluorescentGrid(volume2world, paramSet);
+        else
+            vr = CreateGridVolumeRegion(volume2world, paramSet);
+    }
+    else if (name == "vsdgrid")
+        vr = CreateVSDGridVolumeRegion(volume2world, paramSet);
+    else if (name == "binaryvolumegrid")
+        vr = CreateBinaryGridVolumeRegion(volume2world, paramSet);
+    else if (name == "annotatedgrid")
+        vr = CreateAnnotatedVolumeGrid(volume2world, paramSet);
     else if (name == "exponential")
         vr = CreateExponentialVolumeRegion(volume2world, paramSet);
+    else if (name == "fluorescent")
+        vr = CreateFluorescentVolumeDensityRegion(volume2world, paramSet);
+    else if (name == "fluorescentgrid")
+        vr = CreateFluorescentGrid(volume2world, paramSet);
+    else if (name == "fluorescentbinarygrid")
+        vr = CreateFluorescentBinaryVolumeGrid(volume2world, paramSet);
+    else if (name == "fluorescentannotatedgrid")
+        vr = CreateFluorescentAnnotatedVolumeGrid(volume2world, paramSet);
     else
         Warning("Volume region \"%s\" unknown.", name.c_str());
     paramSet.ReportUnused();
@@ -568,8 +652,39 @@ VolumeIntegrator *MakeVolumeIntegrator(const string &name,
     VolumeIntegrator *vi = NULL;
     if (name == "single")
         vi = CreateSingleScatteringIntegrator(paramSet);
+    else if (name == "vpl")
+        vi = CreateVPLIntegrator(paramSet);
+    else if (name == "singlefluorescence")
+        vi = CreateSingleScatteringFluorescenceIntegrator(paramSet);
+    else if (name == "singlefluorescencerwl")
+        vi = CreateSingleScatteringFluorescenceRWLIntegrator(paramSet);
+    else if (name == "sensor")
+        vi = CreateSensorIntegrator(paramSet);
+    else if (name == "vsdfds")
+        vi = CreateVSDForwardDirectIntegrator(paramSet);
+    else if (name == "vsdfls")
+        vi = CreateVSDForwardLinearIntegrator(paramSet);
+    else if (name == "vsdfss")
+        vi = CreateVSDForwardScatteringIntegrator(paramSet);
+
+    else if (name == "vsdbdg")
+        vi = CreateVSDBackwardDirectIntegrator(paramSet);
+    else if (name == "vsdblg")
+        vi = CreateVSDBackwardLinearIntegrator(paramSet);
+    else if (name == "vsdbsg")
+        vi = CreateVSDBackwardScatteringIntegrator(paramSet);
+
+
+    else if (name == "vsdspritelinear")
+        vi = CreateVSDLinearSpriteIntegrator(paramSet);
+    else if (name == "vsdscattering")
+        vi = CreateVSDScatteringIntegrator(paramSet);
     else if (name == "emission")
         vi = CreateEmissionVolumeIntegrator(paramSet);
+    else if (name == "path")
+        vi = CreateVolumePathIntegrator(paramSet);
+    else if (name == "bdpt")
+        vi = CreateVolumeBDPTIntegrator(paramSet);
     else
         Warning("Volume integrator \"%s\" unknown.", name.c_str());
     paramSet.ReportUnused();
@@ -609,6 +724,8 @@ Camera *MakeCamera(const string &name,
         camera = CreatePerspectiveCamera(paramSet, animatedCam2World, film);
     else if (name == "orthographic")
         camera = CreateOrthographicCamera(paramSet, animatedCam2World, film);
+    else if (name == "telecentric")
+        camera = CreateTelecentricCamera(paramSet, animatedCam2World, film);
     else if (name == "environment")
         camera = CreateEnvironmentCamera(paramSet, animatedCam2World, film);
     else
@@ -987,6 +1104,25 @@ void pbrtAreaLightSource(const string &name,
 }
 
 
+void pbrtSensor(const string &name, const ParamSet &params) {
+    VERIFY_WORLD("Sensor");
+
+    // Create primitive for static shape
+    Transform *obj2world, *world2obj;
+    transformCache.Lookup(curTransform[0], &obj2world, &world2obj);
+
+    // Create the shape of the sensor surface
+    Shape* sensorSurfaceShape = MakeSensorSurfaceShape(name, obj2world, world2obj,
+           graphicsState.reverseOrientation, params);
+    if (!sensorSurfaceShape) return;
+
+    // Create the sensor
+    Sensor* sensor = MakeSensor(name, sensorSurfaceShape, params);
+    renderOptions->sensors.push_back(sensor);
+    params.ReportUnused();
+}
+
+
 void pbrtShape(const string &name, const ParamSet &params) {
     VERIFY_WORLD("Shape");
     Reference<Primitive> prim;
@@ -1198,7 +1334,7 @@ Scene *RenderOptions::MakeScene() {
         accelerator = MakeAccelerator("bvh", primitives, ParamSet());
     if (!accelerator)
         Severe("Unable to create \"bvh\" accelerator.");
-    Scene *scene = new Scene(accelerator, lights, volumeRegion);
+    Scene *scene = new Scene(accelerator, lights, volumeRegion, sensors);
     // Erase primitives, lights, and volume regions from _RenderOptions_
     primitives.erase(primitives.begin(), primitives.end());
     lights.erase(lights.begin(), lights.end());

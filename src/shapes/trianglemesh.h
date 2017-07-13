@@ -56,6 +56,7 @@ public:
     void Refine(vector<Reference<Shape> > &refined) const;
     friend class Triangle;
     template <typename T> friend class VertexTexture;
+    bool Projects(const Point &p, Point &ps, Normal &ns) const { return false; }
 protected:
     // TriangleMesh Protected Data
     int ntris, nverts;
@@ -103,6 +104,8 @@ public:
             const DifferentialGeometry &dg,
             DifferentialGeometry *dgShading) const;
     Point Sample(float u1, float u2, Normal *Ns) const;
+    bool Projects(const Point &p, Point &ps, Normal &ns) const { return false; }
+
 private:
     // Triangle Private Data
     Reference<TriangleMesh> mesh;

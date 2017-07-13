@@ -50,6 +50,7 @@ public:
                    DifferentialGeometry *dg) const;
     bool IntersectP(const Ray &ray) const;
     float Area() const;
+    bool Projects(const Point &p, Point &ps, Normal &ns) const { return false; }
 protected:
     // Cone Private Data
     float radius, height, phiMax;

@@ -95,7 +95,6 @@ struct Matrix4x4 {
 };
 
 
-
 // Transform Declarations
 class Transform {
 public:
@@ -293,8 +292,6 @@ inline RayDifferential Transform::operator()(const RayDifferential &r) const {
 }
 
 
-
-
 // AnimatedTransform Declarations
 class AnimatedTransform {
 public:
@@ -325,7 +322,5 @@ private:
     Quaternion R[2];
     Matrix4x4 S[2];
 };
-
-
 
 #endif // PBRT_CORE_TRANSFORM_H

@@ -64,7 +64,8 @@ private:
     static float gamma(int valence) {
         return 1.f / (valence + 3.f / (8.f * beta(valence)));
     }
-
+    bool Projects(const Point &p, Point &ps, Normal &ns) const { return false; }
+private:
     // LoopSubdiv Private Data
     int nLevels;
     vector<SDVertex *> vertices;

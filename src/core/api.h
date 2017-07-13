@@ -1,6 +1,7 @@
 
 /*
     pbrt source code Copyright(c) 1998-2012 Matt Pharr and Greg Humphreys.
+                                  2012-2015 Marwan Abdellah.
 
     This file is part of pbrt.
 
@@ -77,6 +78,7 @@ void pbrtMakeNamedMaterial(const string &name, const ParamSet &params);
 void pbrtNamedMaterial(const string &name);
 void pbrtLightSource(const string &name, const ParamSet &params);
 void pbrtAreaLightSource(const string &name, const ParamSet &params);
+void pbrtSensor(const string &name, const ParamSet &params);
 void pbrtShape(const string &name, const ParamSet &params);
 void pbrtReverseOrientation();
 void pbrtVolume(const string &name, const ParamSet &params);

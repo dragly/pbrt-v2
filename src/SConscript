@@ -99,6 +99,8 @@ if arch == 'win32':
 
 output['obj2pbrt'] = env.Program('obj2pbrt', [ 'tools/obj2pbrt.cpp' ])
 
+output['sprite2grid'] = env.Program('sprite2grid', [ 'tools/sprite2grid.cpp' ])
+
 output['defaults'] = [ output['pbrt'], output['obj2pbrt'] ]
 
 

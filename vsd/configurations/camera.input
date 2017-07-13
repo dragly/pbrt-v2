@@ -1,0 +1,88 @@
+
+################################################################################
+# Copyright (c) 2015 BBP/EPFL
+# Author : Marwan Abdellah <marwan.abdellah@epfl.ch>
+# This file will be used as an input to create a pbrt scene descriptor file that
+# could be used to validate the configuration of pbrt to simulate the voltage
+# sensitive dye imaging activity in a Monte Carlo integrator.   
+################################################################################
+
+#################################################################
+# Camera
+# eyeX eyeY eyeZ  pX pY pZ  upX upY upZ
+# For further detais, look at gluLookAt()
+#################################################################
+LookAt 0.0 0.0 CAMERA_Z_POSITION  0.0 0.0 0.0  0.0 1.0 0.0
+
+#################################################################
+# Although the camera is not important for the current scene,
+# because the photon detection will be done by the sensors, it
+# is quite useful to render an image to visualize the bounding
+# volume of the data using an orthographic camera.
+# The camera parameters CAMERA_MIN_X, CAMERA_MAX_X, CAMERA_MIN_Y,
+# and CAMERA_MAX_Y will be set according to the loaded point
+# sprite file.
+#################################################################
+Camera "orthographic"
+    "float screenwindow" [CAMERA_MIN_X CAMERA_MAX_X CAMERA_MIN_Y CAMERA_MAX_Y]
+
+############################################
+# Film
+############################################
+Film "image"
+    "integer xresolution" [X_RESOLUTION]
+    "integer yresolution" [Y_RESOLUTION]
+        "string filename" "OUTPUT_FILE_NAME.exr"
+
+############################################
+# Sampler
+############################################
+Sampler "bestcandidate"
+    "integer pixelsamples" [2]
+
+############################################
+# Filters
+############################################
+PixelFilter "triangle"
+
+############################################
+# Volume integrator
+############################################
+VolumeIntegrator "emission"
+    "float stepsize" [SAMPLING_STEP]
+
+############################################
+# Scene
+############################################
+WorldBegin
+
+############################################
+# Volume dimensions
+############################################
+# The dimensions of the homogeneous volume will be set according to the
+# dimensions that are computed from the bounding volume of the loaded VSD
+# point sprite.
+Volume "homogeneous"
+        "point p0" [ VOLUME_MIN_X VOLUME_MIN_Y VOLUME_MIN_Z ]
+        "point p1" [ VOLUME_MAX_X VOLUME_MAX_Y VOLUME_MAX_Z ]
+
+        ###################################################
+        # Assign the optical properties of the medium here
+        # sigma_a : absorption coefficient
+        # sigma_s : scattering coeffecient
+        # These values are used to mimic an emitting tissue media, but not used 
+        # in the simulation itself
+        ###################################################
+        "color sigma_a" [0.00005 0.00005 0.00005]
+        "color sigma_s" [0.00005 0.00005 0.00005]
+        "color Le" [0.00001 0.00001 0.00001]
+
+
+############################################
+### VSD targets
+############################################
+# This part will be replaced by the point targets in the volume that represent
+# fluorescence emission points from the volume.
+VSD_TARGETS
+
+WorldEnd

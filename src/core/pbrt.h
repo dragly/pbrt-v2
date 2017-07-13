@@ -1,6 +1,7 @@
 
 /*
     pbrt source code Copyright(c) 1998-2012 Matt Pharr and Greg Humphreys.
+                                  2012-2016 Marwan Abdellah.
 
     This file is part of pbrt.
 
@@ -73,6 +74,8 @@ using std::vector;
 #endif
 #include <assert.h>
 #include <algorithm>
+#include <stdint.h>
+
 using std::min;
 using std::max;
 using std::swap;
@@ -99,6 +102,12 @@ typedef unsigned __int64 uint64_t;
 #pragma warning (disable : 4244) // int -> float conversion
 #pragma warning (disable : 4267) // size_t -> unsigned int conversion
 #endif
+
+typedef unsigned char uchar;
+typedef u_int8_t uint8;
+typedef u_int16_t uint16;
+typedef u_int32_t uint32;
+typedef u_int64_t uint64;
 
 #if defined(PBRT_IS_LINUX) || defined(PBRT_IS_APPLE)
 #include <stdint.h>
@@ -153,8 +162,8 @@ class GeometricPrimitive;
 template <int nSamples> class CoefficientSpectrum;
 class RGBSpectrum;
 class SampledSpectrum;
-typedef RGBSpectrum Spectrum;
-// typedef SampledSpectrum Spectrum;
+// typedef RGBSpectrum Spectrum;
+typedef SampledSpectrum Spectrum;
 class Camera;
 class ProjectiveCamera;
 class Sampler;
@@ -192,6 +201,7 @@ class VolumeIntegrator;
 #define INV_PI     0.31830988618379067154f
 #define INV_TWOPI  0.15915494309189533577f
 #define INV_FOURPI 0.07957747154594766788f
+#define LN10       2.302585092994046
 #ifndef INFINITY
 #define INFINITY FLT_MAX
 #endif

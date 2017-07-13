@@ -233,16 +233,16 @@ Transform Rotate(float angle, const Vector &axis) {
 }
 
 
-Transform LookAt(const Point &pos, const Point &look, const Vector &up) {
+Transform LookAt(const Point &eye, const Point &center, const Vector &up) {
     float m[4][4];
     // Initialize fourth column of viewing matrix
-    m[0][3] = pos.x;
-    m[1][3] = pos.y;
-    m[2][3] = pos.z;
+    m[0][3] = eye.x;
+    m[1][3] = eye.y;
+    m[2][3] = eye.z;
     m[3][3] = 1;
 
     // Initialize first three columns of viewing matrix
-    Vector dir = Normalize(look - pos);
+    Vector dir = Normalize(center - eye);
     if (Cross(Normalize(up), dir).Length() == 0) {
         Error("\"up\" vector (%f, %f, %f) and viewing direction (%f, %f, %f) "
               "passed to LookAt are pointing in the same direction.  Using "

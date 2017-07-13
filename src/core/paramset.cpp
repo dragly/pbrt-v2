@@ -163,7 +163,7 @@ void ParamSet::AddSampledSpectrumFiles(const string &name, const char **names,
 
         vector<float> vals;
         if (!ReadFloatFile(fn.c_str(), &vals)) {
-            Warning("Unable to read SPD file \"%s\".  Using black distribution.", 
+            Warning("Unable to read SPD file \"%s\".  Using black distribution.",
                     fn.c_str());
             s[i] = Spectrum(0.);
         }
@@ -172,12 +172,35 @@ void ParamSet::AddSampledSpectrumFiles(const string &name, const char **names,
                 Warning("Extra value found in spectrum file \"%s\". "
                         "Ignoring it.", fn.c_str());
             }
+            // Parse the given spectrum distribution in the spd file.
             vector<float> wls, v;
             for (uint32_t j = 0; j < vals.size() / 2; ++j) {
                 wls.push_back(vals[2*j]);
                 v.push_back(vals[2*j+1]);
             }
-            s[i] = Spectrum::FromSampled(&wls[0], &v[0], wls.size());
+            // Match the spectrum distribution to the specified range in the
+            // spectrum class.
+            float *wls_specified, *v_specified;
+            wls_specified = new float[nSpectralSamples];
+            v_specified = new float[nSpectralSamples];
+            for (int j = 0; j < nSpectralSamples; j++) {
+                wls_specified[j] = sampledLambdaStart + j;
+                v_specified[j] = 0;
+            }
+            // Read only the samples that are withing the range between
+            // _sampledLambdaStart_ and _sampledLambdaEnd_.
+            // NOTE: This function assumes no interpolation between the
+            // spectral samples and thus the spectrum should be sample at each
+            // unit sample.
+            for (uint32_t j = 0; j < vals.size() / 2; j++) {
+                const int index = wls.at(j) - sampledLambdaStart;
+                if (index >= 0 && index < nSpectralSamples) {
+                    wls_specified[index] = wls.at(j);
+                    v_specified[index] = v.at(j);
+                }
+            }
+            s[i] = Spectrum::LoadSampledSpectrum(wls_specified, v_specified,
+                                                 nSpectralSamples);
         }
         cachedSpectra[fn] = s[i];
     }
@@ -313,6 +336,11 @@ const float *ParamSet::FindFloat(const string &name, int *n) const {
 
 const int *ParamSet::FindInt(const string &name, int *nItems) const {
     LOOKUP_PTR(ints);
+}
+
+
+const uchar *ParamSet::FindUChar(const string &name, int *nItems) const {
+    LOOKUP_PTR(uchars);
 }
 
 

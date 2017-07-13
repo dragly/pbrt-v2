@@ -74,6 +74,7 @@ public:
         return Sample(u1, u2, Ns);
     }
     virtual float Pdf(const Point &p, const Vector &wi) const;
+    virtual bool Projects(const Point &p, Point &ps, Normal &ns) const = 0;
 
     // Shape Public Data
     const Transform *ObjectToWorld, *WorldToObject;

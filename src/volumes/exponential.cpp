@@ -1,6 +1,7 @@
 
 /*
     pbrt source code Copyright(c) 1998-2012 Matt Pharr and Greg Humphreys.
+                                  2012-2015 Marwan Abdellah.
 
     This file is part of pbrt.
 
@@ -33,6 +34,7 @@
 // volumes/exponential.cpp*
 #include "stdafx.h"
 #include "volumes/exponential.h"
+#include "exponential.h"
 #include "paramset.h"
 
 // ExponentialDensity Method Definitions

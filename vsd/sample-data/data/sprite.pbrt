@@ -1,0 +1,31 @@
+### WARNING: Auto Generated File 
+# For further detais, look at gluLookAt()
+# eyeX eyeY eyeZ pX pY pZ  normX normY normZ
+LookAt 0 1443.83 0 0 0 0 0 0 -1 
+
+# Camera 
+Camera "orthographic" "float screenwindow"[-775.323 775.323 -818.506 818.506]
+
+# Film 
+Film "image"
+	"integer xresolution"[484]
+	"integer yresolution"[512]
+	"string filename""sprite.exr"
+
+# Sampler 
+Sampler"bestcandidate"
+	"integer pixelsamples"[2]
+	PixelFilter "triangle"
+
+# Volume Integrator
+VolumeIntegrator"vsdlinear"
+	"float stepsize"[20]
+
+# Scene 
+WorldBegin
+# Volume
+AttributeBegin
+Include "sprite_volume.pbrt"
+	"color Le"[0 0 0]
+AttributeEnd
+WorldEnd

@@ -53,6 +53,7 @@ public:
     Point Sample(float u1, float u2, Normal *ns) const;
     Point Sample(const Point &p, float u1, float u2, Normal *ns) const;
     float Pdf(const Point &p, const Vector &wi) const;
+    bool Projects(const Point &p, Point &ps, Normal &ns) const { return false; }
 private:
     // Sphere Private Data
     float radius;

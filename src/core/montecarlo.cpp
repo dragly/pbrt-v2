@@ -252,7 +252,6 @@ void LDPixelSample(int xPos, int yPos, float shutterOpen,
 }
 
 
-
 // Monte Carlo Function Definitions
 void RejectionSampleDisk(float *x, float *y, RNG &rng) {
     float sx, sy;

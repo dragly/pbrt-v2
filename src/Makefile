@@ -5,7 +5,7 @@
 # common locations for the OpenEXR libraries; may need to be updated
 # for unusual installation locations
 HAVE_EXR=1
-EXR_INCLUDES=-I/usr/local/include/OpenEXR -I/usr/include/OpenEXR -I/opt/local/include/OpenEXR 
+EXR_INCLUDES=-I/usr/local/include/OpenEXR -I/usr/include/OpenEXR -I/opt/local/include/OpenEXR
 EXR_LIBDIR=-L/usr/local/lib -L/opt/local/lib
 
 HAVE_LIBTIFF=0
@@ -62,25 +62,27 @@ endif
 CC=gcc
 CXX=g++
 LD=$(CXX) $(OPT) $(MARCH)
-INCLUDE=-I. -Icore $(EXR_INCLUDES) $(TIFF_INCLUDES)
+INCLUDE=-I. -Icore -Iintegrators -Ivolumes -Ivsd $(EXR_INCLUDES) $(TIFF_INCLUDES)
 WARN=-Wall
 CWD=$(shell pwd)
-CXXFLAGS=$(OPT) $(MARCH) $(INCLUDE) $(WARN) $(DEFS)
+CXXFLAGS=$(OPT) $(MARCH) $(INCLUDE) $(WARN) $(DEFS) -fopenmp
 CCFLAGS=$(CXXFLAGS)
-LIBS=$(LEXLIB) $(EXR_LIBDIR) $(EXRLIBS) -lm 
+LIBS=$(LEXLIB) $(EXR_LIBDIR) $(EXRLIBS) -lm
 
 LIB_CSRCS=core/targa.c
 LIB_CXXSRCS  = $(wildcard core/*.cpp) core/pbrtlex.cpp core/pbrtparse.cpp
 LIB_CXXSRCS += $(wildcard accelerators/*.cpp cameras/*.cpp film/*.cpp filters/*.cpp )
 LIB_CXXSRCS += $(wildcard integrators/*.cpp lights/*.cpp materials/*.cpp renderers/*.cpp )
 LIB_CXXSRCS += $(wildcard samplers/*.cpp shapes/*.cpp textures/*.cpp volumes/*.cpp)
+LIB_CXXSRCS += $(wildcard vsd/*.cpp)
 
 LIBOBJS  = $(addprefix objs/, $(subst /,_,$(LIB_CSRCS:.c=.o)))
 LIBOBJS += $(addprefix objs/, $(subst /,_,$(LIB_CXXSRCS:.cpp=.o)))
 
 HEADERS = $(wildcard */*.h)
 
-TOOLS = bin/bsdftest bin/exravg bin/exrdiff bin/obj2pbrt
+# Bug bin/bsdftest with the sampled spectrum
+TOOLS = bin/exravg bin/exrdiff bin/obj2pbrt bin/volumizesprite bin/spritebounds
 ifeq ($(HAVE_LIBTIFF),1)
     TOOLS += bin/exrtotiff
 endif
@@ -96,7 +98,7 @@ dirs:
 
 $(LIBOBJS): $(HEADERS)
 
-.PHONY: dirs tools 
+.PHONY: dirs tools vsd
 .SECONDARY:
 
 objs/libpbrt.a: $(LIBOBJS)
@@ -171,17 +173,25 @@ objs/tools_%.o: tools/%.cpp
 	@echo "Building object $@"
 	@$(CXX) $(CXXFLAGS) -o $@ -c $<
 
+objs/vsd_%.o: vsd/%.cpp
+	@echo "Building object $@"
+	@$(CXX) $(CXXFLAGS) -o $@ -c $<
+
 bin/pbrt: objs/main_pbrt.o objs/libpbrt.a
 	@echo "Linking $@"
 	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
-bin/%: objs/tools_%.o objs/libpbrt.a 
+bin/%: objs/tools_%.o objs/libpbrt.a
 	@echo "Linking $@"
 	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
-bin/exrtotiff: objs/tools_exrtotiff.o 
+bin/%: objs/vsd_%.o
 	@echo "Linking $@"
-	@$(CXX) $(CXXFLAGS) -o $@ $^ $(TIFF_LIBDIR) -ltiff $(LIBS) 
+	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+
+bin/exrtotiff: objs/tools_exrtotiff.o
+	@echo "Linking $@"
+	@$(CXX) $(CXXFLAGS) -o $@ $^ $(TIFF_LIBDIR) -ltiff $(LIBS)
 
 core/pbrtlex.cpp: core/pbrtlex.ll core/pbrtparse.cpp
 	@echo "Lex'ing pbrtlex.ll"

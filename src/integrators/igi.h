@@ -53,7 +53,6 @@ struct VirtualLight {
 };
 
 
-
 // IGIIntegrator Declarations
 class IGIIntegrator : public SurfaceIntegrator {
 public:

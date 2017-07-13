@@ -79,14 +79,13 @@ bool Disk::Intersect(const Ray &r, float *tHit, float *rayEpsilon,
 
     // Find parametric representation of disk hit
     float u = phi / phiMax;
-    float oneMinusV = ((sqrtf(dist2)-innerRadius) /
+    float R = sqrtf(dist2);
+    float oneMinusV = ((R-innerRadius) /
                        (radius-innerRadius));
-    float invOneMinusV = (oneMinusV > 0.f) ? (1.f / oneMinusV) : 0.f;
     float v = 1.f - oneMinusV;
     Vector dpdu(-phiMax * phit.y, phiMax * phit.x, 0.);
-    Vector dpdv(-phit.x * invOneMinusV, -phit.y * invOneMinusV, 0.);
-    dpdu *= phiMax * INV_TWOPI;
-    dpdv *= (radius - innerRadius) / radius;
+    Vector dpdv(phit.x, phit.y, 0.);
+    dpdv *= (innerRadius - radius) / R;
     Normal dndu(0,0,0), dndv(0,0,0);
 
     // Initialize _DifferentialGeometry_ from parametric information
@@ -157,3 +156,27 @@ Point Disk::Sample(float u1, float u2, Normal *Ns) const {
 }
 
 
+bool Disk::Projects(const Point &p, Point &ps, Normal &ns) const
+{
+    // Transform the point _p_ to the object space _Pobj_
+    Point Pobj;
+    (*WorldToObject)(p, &Pobj);
+
+    Point PSobj;
+
+    // Check if the point projects to the disk or not.
+    // In the object space, the disk is located in the XY plane, so we need to
+    // check if the point is located within the circumference of the disk or not.
+    // Find the radius, use the polar coordinates.
+    const double r = sqrt((Pobj.x * Pobj.x) + (Pobj.y * Pobj.y));
+    if (r > radius)
+        return false;
+
+    // Return the position of the sample on the light source.
+    PSobj.x = Pobj.x;
+    PSobj.y = Pobj.y;
+    PSobj.z = 0;
+    (*ObjectToWorld)(PSobj, &ps);
+    ns = Normalize((*ObjectToWorld)(Normal(0,0,1)));
+    return true;
+}

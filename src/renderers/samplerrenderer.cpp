@@ -42,18 +42,20 @@
 #include "camera.h"
 #include "intersection.h"
 
-static uint32_t hash(char *key, uint32_t len)
+using namespace std;
+
+static uint32_t hashFunction(char *key, uint32_t len)
 {
-    uint32_t hash = 0, i;
-    for (hash=0, i=0; i<len; ++i) {
-        hash += key[i];
-        hash += (hash << 10);
-        hash ^= (hash >> 6);
+    uint32_t hashNum = 0, i;
+    for (hashNum=0, i=0; i<len; ++i) {
+        hashNum += key[i];
+        hashNum += (hashNum << 10);
+        hashNum ^= (hashNum >> 6);
     }
-    hash += (hash << 3);
-    hash ^= (hash >> 11);
-    hash += (hash << 15);
-    return hash;
+    hashNum += (hashNum << 3);
+    hashNum ^= (hashNum >> 11);
+    hashNum += (hashNum << 15);
+    return hashNum;
 } 
 
 // SamplerRendererTask Definitions
@@ -97,7 +99,7 @@ void SamplerRendererTask::Run() {
                 if (rayWeight > 0.f && scene->Intersect(rays[i], &isects[i])) {
                     // random shading based on shape id...
                     uint32_t ids[2] = { isects[i].shapeId, isects[i].primitiveId };
-                    uint32_t h = hash((char *)ids, sizeof(ids));
+                    uint32_t h = hashFunction((char *)ids, sizeof(ids));
                     float rgb[3] = { float(h & 0xff), float((h >> 8) & 0xff),
                                      float((h >> 16) & 0xff) };
                     Ls[i] = Spectrum::FromRGB(rgb);
@@ -108,9 +110,10 @@ void SamplerRendererTask::Run() {
             }
             else {
             if (rayWeight > 0.f)
+            {
                 Ls[i] = rayWeight * renderer->Li(scene, rays[i], &samples[i], rng,
                                                  arena, &isects[i], &Ts[i]);
-            else {
+            } else {
                 Ls[i] = 0.f;
                 Ts[i] = 1.f;
             }
@@ -218,7 +221,7 @@ void SamplerRenderer::Render(const Scene *scene) {
     PBRT_FINISHED_RENDERING();
     // Clean up after rendering and store final image
     delete sample;
-    camera->film->WriteImage();
+    camera->film->WriteImage(1.f / sampler->samplesPerPixel);
 }
 
 

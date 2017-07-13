@@ -147,6 +147,7 @@ ReverseOrientation      { return REVERSEORIENTATION; }
 Rotate                  { return ROTATE; }
 Sampler                 { return SAMPLER; }
 Scale                   { return SCALE; }
+Sensor                  { return SENSOR; }
 Shape                   { return SHAPE; }
 StartTime               { return STARTTIME; }
 SurfaceIntegrator       { return SURFACEINTEGRATOR; }

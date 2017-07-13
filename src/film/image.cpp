@@ -1,6 +1,7 @@
 
 /*
     pbrt source code Copyright(c) 1998-2012 Matt Pharr and Greg Humphreys.
+                                  2012-2016 Marwan Abdellah.
 
     This file is part of pbrt.
 
@@ -37,18 +38,52 @@
 #include "parallel.h"
 #include "imageio.h"
 
+#include <fstream>
+#include <math.h>
+#include <stdio.h>
+#include <iostream>
+#include <cmath>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <stdio.h>
+#include <pthread.h>
+
+
+void strip(std::string &fullString, const std::string subString)
+{
+    std::string::size_type i = fullString.find(subString);
+    if (i != std::string::npos)
+       fullString.erase(i, subString.length());
+}
+
+
 // ImageFilm Method Definitions
-ImageFilm::ImageFilm(int xres, int yres, Filter *filt, const float crop[4],
-                     const string &fn, bool openWindow)
+ImageFilm::ImageFilm(int xres, int yres, float filmwidth, float filmheight,
+        Filter *filt, const float crop[4], const string &fn, bool openWindow,
+        bool pixelspectra, bool avgfilmspectrum,
+        bool usefilter, int lambdamin, int lambdamax, bool valid)
     : Film(xres, yres) {
     filter = filt;
     memcpy(cropWindow, crop, 4 * sizeof(float));
-    filename = fn;
-    // Compute film image extent
+    fileNamePrefix = fn;
     xPixelStart = Ceil2Int(xResolution * cropWindow[0]);
     xPixelCount = max(1, Ceil2Int(xResolution * cropWindow[1]) - xPixelStart);
     yPixelStart = Ceil2Int(yResolution * cropWindow[2]);
     yPixelCount = max(1, Ceil2Int(yResolution * cropWindow[3]) - yPixelStart);
+    filmWidth = filmwidth;
+    filmHeight = filmheight;
+    filmArea = filmWidth * filmHeight;
+    pixelWidth = filmWidth / xres;
+    pixelHeight = filmHeight / yres;
+    pixelArea = pixelWidth * pixelHeight;
+    writePixelsSpectra = pixelspectra;
+    writeImageSpectrum = avgfilmspectrum;
+    nIlluminatedPixels = 0;
+    useFilter = usefilter;
+    lambdaMin = lambdamin;
+    lambdaMax = lambdamax;
+    validate = valid;
 
     // Allocate film image storage
     pixels = new BlockedArray<Pixel>(xPixelCount, yPixelCount);
@@ -93,9 +128,25 @@ void ImageFilm::AddSample(const CameraSample &sample,
         return;
     }
 
+    // Clone the input spectrum to the film
+    Spectrum Lfilter(0.);
+    if (useFilter) {
+        for (int i = 0; i < nSpectralSamples; i++)
+            Lfilter.SetSpectrumAtSample(i, L.GetSpectrumAtSample(i));
+
+        // Apply the filters
+        Lfilter.BlockBand(lambdaMin, lambdaMax);
+    }
+
     // Loop over filter support and add sample to pixel arrays
     float xyz[3];
-    L.ToXYZ(xyz);
+    Spectrum LImage = Spectrum(0.f);
+    if (useFilter)
+        LImage = Lfilter;
+    else
+        LImage = L;
+
+    LImage.ToXYZ(xyz);
 
     // Precompute $x$ and $y$ filter table offsets
     int *ifx = ALLOCA(int, x1 - x0 + 1);
@@ -124,6 +175,15 @@ void ImageFilm::AddSample(const CameraSample &sample,
                 pixel.Lxyz[1] += filterWt * xyz[1];
                 pixel.Lxyz[2] += filterWt * xyz[2];
                 pixel.weightSum += filterWt;
+
+                if (writePixelsSpectra || writeImageSpectrum) {
+                    for (int i = 0; i < nSpectralSamples; i++) {
+                        // Add the pixel area into the calculations to account
+                        // for the CCD size
+                        pixel.L.GetRefToSampleValueAtWavelengthIndex(i) +=
+            pixelArea * filterWt * LImage.GetSampleValueAtWavelengthIndex(i);
+                    }
+                }
             }
             else {
                 // Safely update _Lxyz_ and _weightSum_ even with concurrency
@@ -131,6 +191,16 @@ void ImageFilm::AddSample(const CameraSample &sample,
                 AtomicAdd(&pixel.Lxyz[1], filterWt * xyz[1]);
                 AtomicAdd(&pixel.Lxyz[2], filterWt * xyz[2]);
                 AtomicAdd(&pixel.weightSum, filterWt);
+
+                // Add the sample (SampledSpectrum sample) to the pixel
+                if (writePixelsSpectra || writeImageSpectrum) {
+                    for (int i = 0; i < nSpectralSamples; i++) {
+                        // Add the pixel area into the calculations to account
+                        // for the CCD size
+                        AtomicAdd(&pixel.L.GetRefToSampleValueAtWavelengthIndex(i),
+            pixelArea * filterWt * LImage.GetSampleValueAtWavelengthIndex(i));
+                    }
+                }
             }
         }
     }
@@ -178,14 +248,23 @@ void ImageFilm::GetPixelExtent(int *xstart, int *xend,
 void ImageFilm::WriteImage(float splatScale) {
     // Convert image to RGB and compute final pixel values
     int nPix = xPixelCount * yPixelCount;
+    float* recordedEnergy = new float[nPix];
     float *rgb = new float[3*nPix];
     int offset = 0;
     for (int y = 0; y < yPixelCount; ++y) {
         for (int x = 0; x < xPixelCount; ++x) {
-            // Convert pixel XYZ color to RGB
             XYZToRGB((*pixels)(x, y).Lxyz, &rgb[3*offset]);
+            float r = (*pixels)(x, y).Lxyz[0];
+            float g = (*pixels)(x, y).Lxyz[1];
+            float b = (*pixels)(x, y).Lxyz[2];
+            float average = splatScale * (r + g + b) / 3.f;
+            recordedEnergy[offset] = average;
+            if(rgb[3 * offset    ] != 0 &&
+               rgb[3 * offset + 1] != 0 &&
+               rgb[3 * offset + 2] != 0) {
+                this->nIlluminatedPixels += 1;
+            }
 
-            // Normalize pixel with weight sum
             float weightSum = (*pixels)(x, y).weightSum;
             if (weightSum != 0.f) {
                 float invWt = 1.f / weightSum;
@@ -194,7 +273,6 @@ void ImageFilm::WriteImage(float splatScale) {
                 rgb[3*offset+2] = max(0.f, rgb[3*offset+2] * invWt);
             }
 
-            // Add splat value at pixel
             float splatRGB[3];
             XYZToRGB((*pixels)(x, y).splatXYZ, splatRGB);
             rgb[3*offset  ] += splatScale * splatRGB[0];
@@ -203,13 +281,132 @@ void ImageFilm::WriteImage(float splatScale) {
             ++offset;
         }
     }
-
-    // Write RGB image
-    ::WriteImage(filename, rgb, NULL, xPixelCount, yPixelCount,
+    strip(fileNamePrefix, ".exr");
+    string imageFile = fileNamePrefix + ".exr";
+    ::WriteImage(imageFile, rgb, NULL, xPixelCount, yPixelCount,
                  xResolution, yResolution, xPixelStart, yPixelStart);
+
+    // Write the VSD image
+    const string vsdFile =  fileNamePrefix + ".vsd";
+    std::fstream stream(vsdFile.c_str(), ios::out);
+    for (uint64_t x = 0; x < xResolution; ++x)
+        for (uint64_t y = 0; y < yResolution; ++y)
+            stream << x << " " << y << " "
+                   << recordedEnergy[x + xResolution* y] << endl;
+    stream.close();
 
     // Release temporary image memory
     delete[] rgb;
+    delete[] recordedEnergy;
+
+    // Write the validation image
+    WriteValidationImage(0.f);
+}
+
+
+void ImageFilm::WriteValidationImage(float splatScale) {
+    int nPix = xPixelCount * yPixelCount;
+    float *rgbPixel = new float[3*nPix];
+    // Compute the average spectrum for the entire image
+    Spectrum LImage(0.);
+    if (writePixelsSpectra || writeImageSpectrum) {
+        FILE* spectrumFile = 0;
+        string spectrumFileName = fileNamePrefix + ".spectrum";
+        if (writePixelsSpectra) {
+            spectrumFile = fopen(spectrumFileName.c_str(), "w");
+        }
+        int offset = 0;
+        for (int y = 0; y < yPixelCount; ++y) {
+            for (int x = 0; x < xPixelCount; ++x) {
+                Spectrum LPixel = (*pixels)(x, y).L;
+                float weightSum = (*pixels)(x, y).weightSum;
+                if (weightSum != 0.f) {
+                    float invWt = 1.f / weightSum;
+                    for (int i = 0; i < nSpectralSamples; i++) {
+                        float sampleValue = max(0.0f,
+                        LPixel.GetSampleValueAtWavelengthIndex(i) * invWt);
+                        LPixel.SetSampleValueAtWavelengthIndex(i, sampleValue);
+                        if (writeImageSpectrum)
+                            LImage.SetSampleValueAtWavelengthIndex
+            (i, LImage.GetSampleValueAtWavelengthIndex(i) + sampleValue);
+                    }
+                }
+                float xyzPixel[3];
+                LPixel.ToXYZ(xyzPixel);
+                XYZToRGB(xyzPixel, &rgbPixel[3*offset]);
+
+#ifdef DEBUG_CENTRAL_PIXEL_SPECTRUM
+                if(x == ((xPixelCount / 2) - 1) && (y == (yPixelCount / 2) - 1)) {
+                    printf("[FILM_INFO] : The recorded spectrum at the "
+                           "central pixel of the image is ");
+                    LPixel.PrintSpectrum_f();
+                }
+#endif
+                if (writePixelsSpectra) {
+                    fprintf(spectrumFile, "\n[%d, %d]_", x, y);
+                    LPixel.Write(spectrumFile);
+                }
+                ++offset;
+            }
+        }
+        if (writePixelsSpectra)
+            fclose(spectrumFile);
+    }
+
+    // Write film info
+    FILE* filmInfo;
+    strip(fileNamePrefix, ".exr");
+    string filmInfoFile = fileNamePrefix + ".film";
+    filmInfo = fopen(filmInfoFile.c_str(), "w"); {
+        // Total power arriving to the film
+        float totalRadiance = LImage.CalculateSPDPower();
+        float totalIrradiance = totalRadiance * M_PI;
+        float totalPower = totalIrradiance * filmArea;
+
+        // Average power per pixel
+        Spectrum LAverage(0.f);
+        if (nIlluminatedPixels > 0)
+            LAverage = LImage / nIlluminatedPixels;
+        float avgRadiance = LAverage.CalculateSPDPower();
+        float avgIrradiance = avgRadiance * M_PI;
+        float avgPower = avgIrradiance * filmArea;
+
+        fprintf(filmInfo, "Film size %f x %f \n", filmWidth, filmHeight);
+        fprintf(filmInfo, "pixel size %e x %e \n", pixelWidth, pixelHeight);
+        fprintf(filmInfo, "Number illuminated pixels %d \n", nIlluminatedPixels);
+        fprintf(filmInfo, "Total L (Radiance) %e \n", totalRadiance);
+        fprintf(filmInfo, "Total E (Irradiance) %e \n", totalIrradiance);
+        fprintf(filmInfo, "Total Flux (Power) %e \n", totalPower);
+        fprintf(filmInfo, "Avg. L (Radiance) %e \n", avgRadiance);
+        fprintf(filmInfo, "Avg. E (Irradiance) %e \n", avgIrradiance);
+        fprintf(filmInfo, "Avg. Flux (Power) %e \n", avgPower);
+
+    }
+    fclose(filmInfo);
+
+    // Write film spectra
+    if(writeImageSpectrum) {
+        FILE* imageSpectrumFile;
+        string imageSpectrumFileName = fileNamePrefix + ".spectrum";
+        imageSpectrumFile = fopen(imageSpectrumFileName.c_str(), "w");
+        fprintf(imageSpectrumFile, "\n\nAbsolute detected spectrum\n\n");
+        LImage.WriteWavelengthIntensity(imageSpectrumFile);
+
+        // Write the normalized spectrum as well
+        fprintf(imageSpectrumFile, "\n\nNormalized spectrum\n\n");
+        LImage.Normalize();
+        LImage.WriteWavelengthIntensity(imageSpectrumFile);
+        fclose(imageSpectrumFile);
+    }
+
+    // Write validation image to compare RGB to spectral radiance
+    if(validate) {
+        string validationFileName = fileNamePrefix + ".validation.exr";
+        ::WriteImage(validationFileName, rgbPixel, NULL, xPixelCount, yPixelCount,
+                     xResolution, yResolution, xPixelStart, yPixelStart);
+    }
+
+    delete[] rgbPixel;
 }
 
 
@@ -241,6 +438,9 @@ ImageFilm *CreateImageFilm(const ParamSet &params, Filter *filter) {
 
     int xres = params.FindOneInt("xresolution", 640);
     int yres = params.FindOneInt("yresolution", 480);
+    // Pixel size in um
+    float pixelWidth_um = params.FindOneFloat("pixelwidth", 1);
+    float pixelHeight_um = params.FindOneFloat("pixelheight", 1);
     if (PbrtOptions.quickRender) xres = max(1, xres / 4);
     if (PbrtOptions.quickRender) yres = max(1, yres / 4);
     bool openwin = params.FindOneBool("display", false);
@@ -254,7 +454,13 @@ ImageFilm *CreateImageFilm(const ParamSet &params, Filter *filter) {
         crop[3] = Clamp(max(cr[2], cr[3]), 0., 1.);
     }
 
-    return new ImageFilm(xres, yres, filter, crop, filename, openwin);
+    bool validate = params.FindOneBool("validate", false);
+    bool writeSpectrum = params.FindOneBool("writefilmspectrum", false);
+    bool writeAverageSpectrum = params.FindOneBool("writeaveragefilmspectrum", false);
+    bool spectralfilter = params.FindOneBool("spectralfilter", false);
+    int filterBandMin = params.FindOneInt("filter1bandmin", 400);
+    int filterBandMax = params.FindOneInt("filter1bandmax", 700);
+    return new ImageFilm(xres, yres, pixelWidth_um, pixelHeight_um,
+            filter, crop, filename, openwin, writeSpectrum, writeAverageSpectrum,
+            spectralfilter, filterBandMin, filterBandMax, validate);
 }
-
-

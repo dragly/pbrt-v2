@@ -1,0 +1,69 @@
+################################################################################
+# WARNING: AUTO-GENERATED FILE, DON'T TRY TO EDIT MANUALLY ! 
+# Copyright (c) 2015 - 2016 BBP/EPFL
+# Author : Marwan Abdellah <marwan.abdellah@epfl.ch>
+################################################################################
+
+############################################
+# Camera
+############################################
+# For further detais, look at gluLookAt()
+# Looking always from top 
+# eyeX eyeY eyeZ pX pY pZ  normX normY normZ
+LookAt 0.0 CAMERA_Y_POSITION 0.0  0.0 0.0 0.0  0.0 0.0 -1.0
+
+Camera "orthographic"
+    "float screenwindow" [CAMERA_MIN_X CAMERA_MAX_X CAMERA_MIN_Z CAMERA_MAX_Z]
+
+############################################
+# Film
+############################################
+Film "image"
+    "integer xresolution" [X_RESOLUTION]
+    "integer yresolution" [Z_RESOLUTION]
+    "string filename" "OUTPUT_FILE_NAME.exr"
+
+############################################
+# Sampler
+############################################
+Sampler "bestcandidate"
+    "integer pixelsamples" [32]
+
+############################################
+# Filters
+############################################
+PixelFilter "triangle"
+
+############################################
+# Volume integrator
+############################################
+VolumeIntegrator "SIMULATION_METHOD_VOLUME"
+    "float stepsize" [STEP_SIZE]
+    
+############################################
+# Scene
+############################################
+WorldBegin
+
+############################################
+# Volume
+############################################
+Volume "vsdgrid"
+        "string format" "raw" # assume it is raw for all the volumes for now
+        "string prefix" "VOLUME_PREFIX"
+        ###################################################
+        # Assign the optical properties of the medium here
+        # sigma_a : absorption coefficient
+        # sigma_s : scattering coeffecient
+        # These values are used in the actual simulation,
+        # but not used for the rendering of the camera frame.
+        # The optical properties used for the camera-rendering
+        # are fixed in the Li method of the vsd integrator.
+        ###################################################
+        "color sigma_a" [0.20e-3 0.20e-3 0.20e-3]
+        "color sigma_s" [18e-3 18e-3 18e-3]
+
+        # This value is never called in the simulation, code, so we will use it
+        # in the camera-rendering code to highlight the tissue space.
+        "color Le" [0.00001 0.00001 0.00001]
+WorldEnd

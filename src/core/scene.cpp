@@ -47,12 +47,15 @@ Scene::~Scene() {
     delete volumeRegion;
     for (uint32_t i = 0; i < lights.size(); ++i)
         delete lights[i];
+    for (uint32_t i = 0; i < sensors.size(); ++i)
+            delete sensors[i];
 }
 
 
 Scene::Scene(Primitive *accel, const vector<Light *> &lts,
-             VolumeRegion *vr) {
+             VolumeRegion *vr, const vector<Sensor *> &snsrs) {
     lights = lts;
+    sensors = snsrs;
     aggregate = accel;
     volumeRegion = vr;
     // Scene Constructor Implementation

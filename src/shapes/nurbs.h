@@ -56,6 +56,7 @@ public:
     BBox WorldBound() const;
     bool CanIntersect() const { return false; }
     void Refine(vector<Reference<Shape> > &refined) const;
+    bool Projects(const Point &p, Point &ps, Normal &ns) const { return false; }
 private:
     // NURBS Data
     int nu, uorder, nv, vorder;

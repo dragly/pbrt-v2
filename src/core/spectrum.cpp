@@ -57,6 +57,33 @@ void SortSpectrumSamples(float *lambda, float *vals, int n) {
 
 float AverageSpectrumSamples(const float *lambda, const float *vals,
         int n, float lambdaStart, float lambdaEnd) {
+
+    /// Handle cases when you have a sampling of 1nm for the wavelength
+    /// In this case, you don't really need to sample the spectrum,
+    /// becuase, it will give errors in case of spike pulses, or laser beams.
+    /// TODO: Check the resulting spectrum for a spike emission to validate
+    /// the result of this step.
+    /// To resolve this issue:
+    /// 1. Consider _lambdaStart_ and _lambdaEnd_
+    /// 2. Find the index corresponding to them
+    /// 3. Check if any of them has zero.
+    /// 4. If v[_lambdaStart_] = 0, then return v[_lambdaEnd_]
+    /// 5. if v[_lambdaEnd_] = 0, then return v[_lambdaStart_]
+
+#ifdef DEBUG_SPECTRUM
+    printf("lambda**********************************************************\n");
+    for (int i = 0; i < n; i++)
+        printf("lambda[%d] %f ",i, lambda[i]);
+    printf("\n");
+    printf("lambda**********************************************************\n");
+
+    printf("vals************************************************************\n");
+    for (int i = 0; i < n; i++)
+        printf("vals[%d] %f ",i, vals[i]);
+    printf("\n");
+    printf("vals************************************************************\n");
+#endif
+
     for (int i = 0; i < n-1; ++i) Assert(lambda[i+1] > lambda[i]);
     Assert(lambdaStart < lambdaEnd);
     // Handle cases with out-of-bounds range or single sample only
@@ -75,7 +102,6 @@ float AverageSpectrumSamples(const float *lambda, const float *vals,
     while (lambdaStart > lambda[i+1]) ++i;
     Assert(i+1 < n);
 
-    // Loop over wavelength sample segments and add contributions
 #define INTERP(w, i) \
         Lerp(((w) - lambda[i]) / (lambda[(i)+1] - lambda[i]), \
              vals[i], vals[(i)+1])

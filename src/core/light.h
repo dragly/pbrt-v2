@@ -59,11 +59,18 @@ public:
                     "that this transform will have no scale factors in it.\n"
                     "Proceed at your own risk; your image may have errors or\n"
                     "the system may crash as a result of this.");
+
+        // Unless specified to be a laser light source
+        isLaser = false;
+        laserWavelength = -1;
+        laserWavelengthIndex = -1;
     }
     virtual Spectrum Sample_L(const Point &p, float pEpsilon,
         const LightSample &ls, float time, Vector *wi, float *pdf,
         VisibilityTester *vis) const = 0;
     virtual Spectrum Power(const Scene *) const = 0;
+    virtual Spectrum Irradiance(const Scene *) const { return 0.; }
+    virtual Spectrum Radiance(const Scene *) const { return 0.; }
     virtual bool IsDeltaLight() const = 0;
     virtual Spectrum Le(const RayDifferential &r) const;
     virtual float Pdf(const Point &p, const Vector &wi) const = 0;
@@ -73,12 +80,17 @@ public:
     virtual void SHProject(const Point &p, float pEpsilon, int lmax,
         const Scene *scene, bool computeLightVisibility, float time,
         RNG &rng, Spectrum *coeffs) const;
-
+    virtual void PerformLaserTest();
+    virtual bool IsLaser() const { return isLaser; }
+    virtual int GetLaserWavelength() { return laserWavelength; }
+    virtual int GetLaserWavelengthIndex() { return laserWavelengthIndex; }
     // Light Public Data
     const int nSamples;
 protected:
     // Light Protected Data
     const Transform LightToWorld, WorldToLight;
+    bool isLaser;
+    int laserWavelength, laserWavelengthIndex;
 };
 
 
@@ -137,7 +149,6 @@ struct LightSampleOffsets {
 };
 
 
-
 // ShapeSet Declarations
 class ShapeSet {
 public:
@@ -149,6 +160,7 @@ public:
     Point Sample(const LightSample &ls, Normal *Ns) const;
     float Pdf(const Point &p, const Vector &wi) const;
     float Pdf(const Point &p) const;
+    bool Projects(const Point &p, Point &ps, Normal &ns) const;
 private:
     // ShapeSet Private Data
     vector<Reference<Shape> > shapes;
@@ -157,6 +169,13 @@ private:
     Distribution1D *areaDistribution;
 };
 
+
+// LightUnit Declarations
+enum LightUnit {
+    Power,
+    Irradiance,
+    Radiance
+};
 
 
 #endif // PBRT_CORE_LIGHT_H

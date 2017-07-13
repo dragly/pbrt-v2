@@ -1,8 +1,10 @@
-/* A Bison parser, made by GNU Bison 2.5.1.  */
 
-/* Bison interface for Yacc-like parsers in C
+/* A Bison parser, made by GNU Bison 2.4.1.  */
+
+/* Skeleton interface for Bison's Yacc-like parsers in C
    
-      Copyright (C) 1984, 1989-1990, 2000-2012 Free Software Foundation, Inc.
+      Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004, 2005, 2006
+   Free Software Foundation, Inc.
    
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -70,20 +72,21 @@
      ROTATE = 288,
      SAMPLER = 289,
      SCALE = 290,
-     SHAPE = 291,
-     STARTTIME = 292,
-     SURFACEINTEGRATOR = 293,
-     TEXTURE = 294,
-     TRANSFORMBEGIN = 295,
-     TRANSFORMEND = 296,
-     TRANSFORMTIMES = 297,
-     TRANSFORM = 298,
-     TRANSLATE = 299,
-     VOLUME = 300,
-     VOLUMEINTEGRATOR = 301,
-     WORLDBEGIN = 302,
-     WORLDEND = 303,
-     HIGH_PRECEDENCE = 304
+     SENSOR = 291,
+     SHAPE = 292,
+     STARTTIME = 293,
+     SURFACEINTEGRATOR = 294,
+     TEXTURE = 295,
+     TRANSFORMBEGIN = 296,
+     TRANSFORMEND = 297,
+     TRANSFORMTIMES = 298,
+     TRANSFORM = 299,
+     TRANSLATE = 300,
+     VOLUME = 301,
+     VOLUMEINTEGRATOR = 302,
+     WORLDBEGIN = 303,
+     WORLDEND = 304,
+     HIGH_PRECEDENCE = 305
    };
 #endif
 
@@ -93,8 +96,8 @@
 typedef union YYSTYPE
 {
 
-/* Line 2136 of yacc.c  */
-#line 157 "build/darwin-debug/core/pbrtparse.yy"
+/* Line 1676 of yacc.c  */
+#line 157 "core/pbrtparse.yy"
 
 char string[1024];
 float num;
@@ -102,8 +105,8 @@ ParamArray *ribarray;
 
 
 
-/* Line 2136 of yacc.c  */
-#line 107 "build/darwin-debug/core/pbrtparse.hh"
+/* Line 1676 of yacc.c  */
+#line 110 "core/pbrtparse.hpp"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

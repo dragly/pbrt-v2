@@ -40,12 +40,14 @@
 #include "pbrt.h"
 #include "primitive.h"
 #include "integrator.h"
+#include "sensor.h"
 
 // Scene Declarations
 class Scene {
 public:
     // Scene Public Methods
-    Scene(Primitive *accel, const vector<Light *> &lts, VolumeRegion *vr);
+    Scene(Primitive *accel, const vector<Light *> &lts, VolumeRegion *vr,
+          const vector<Sensor *> &snsrs);
     ~Scene();
     bool Intersect(const Ray &ray, Intersection *isect) const {
         PBRT_STARTED_RAY_INTERSECTION(const_cast<Ray *>(&ray));
@@ -65,6 +67,7 @@ public:
     Primitive *aggregate;
     vector<Light *> lights;
     VolumeRegion *volumeRegion;
+    vector<Sensor *> sensors;
     BBox bound;
 };
 

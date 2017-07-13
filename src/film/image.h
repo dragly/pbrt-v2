@@ -1,6 +1,7 @@
 
 /*
     pbrt source code Copyright(c) 1998-2012 Matt Pharr and Greg Humphreys.
+                                  2012-2016 Marwan Abdellah.
 
     This file is part of pbrt.
 
@@ -42,13 +43,16 @@
 #include "sampler.h"
 #include "filter.h"
 #include "paramset.h"
+#include "spectrum.h"
 
 // ImageFilm Declarations
 class ImageFilm : public Film {
 public:
     // ImageFilm Public Methods
-    ImageFilm(int xres, int yres, Filter *filt, const float crop[4],
-              const string &filename, bool openWindow);
+    ImageFilm(int xres, int yres, float filmwidth, float filmheight,
+            Filter *filt, const float crop[4], const string &fileNamePrefix,
+            bool openWindow, bool pixelspectra, bool avgfilmspectrum,
+            bool filter, int lambdamin, int lambdamax, bool valid);
     ~ImageFilm() {
         delete pixels;
         delete filter;
@@ -59,28 +63,48 @@ public:
     void GetSampleExtent(int *xstart, int *xend, int *ystart, int *yend) const;
     void GetPixelExtent(int *xstart, int *xend, int *ystart, int *yend) const;
     void WriteImage(float splatScale);
+    void WriteValidationImage(float splatScale);
     void UpdateDisplay(int x0, int y0, int x1, int y1, float splatScale);
+    float GetFilmWidth() const { return filmWidth; }
+    float GetFilmHeight() const { return filmHeight; }
+    float GetFilmArea() const { return filmArea; }
+    float GetPixelWidth() const { return pixelWidth; }
+    float GetPixelHeight() const { return pixelHeight; }
+    float GetPixelArea() const { return pixelArea; }
 private:
     // ImageFilm Private Data
     Filter *filter;
     float cropWindow[4];
-    string filename;
+    string fileNamePrefix;
     int xPixelStart, yPixelStart, xPixelCount, yPixelCount;
+    float filmWidth, filmHeight, filmArea;
+    float pixelWidth, pixelHeight, pixelArea;
+
     struct Pixel {
         Pixel() {
             for (int i = 0; i < 3; ++i) Lxyz[i] = splatXYZ[i] = 0.f;
             weightSum = 0.f;
+            L = Spectrum(0.);
         }
         float Lxyz[3];
         float weightSum;
         float splatXYZ[3];
         float pad;
+        Spectrum L;
     };
     BlockedArray<Pixel> *pixels;
     float *filterTable;
+    int nIlluminatedPixels;
+    bool useFilter;
+    int lambdaMin;
+    int lambdaMax;
+    bool writePixelsSpectra;
+    bool writeImageSpectrum;
+    bool validate;
 };
 
 
 ImageFilm *CreateImageFilm(const ParamSet &params, Filter *filter);
+
 
 #endif // PBRT_FILM_IMAGE_H

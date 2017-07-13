@@ -32,7 +32,7 @@
 
 // integrators/single.cpp*
 #include "stdafx.h"
-#include "integrators/single.h"
+#include "single.h"
 #include "scene.h"
 #include "paramset.h"
 #include "montecarlo.h"
@@ -82,7 +82,6 @@ Spectrum SingleScatteringIntegrator::Li(const Scene *scene, const Renderer *rend
     Point p = ray(t0), pPrev;
     Vector w = -ray.d;
     t0 += sample->oneD[scatterSampleOffset][0] * step;
-
     // Compute sample patterns for single scattering samples
     float *lightNum = arena.Alloc<float>(nSamples);
     LDShuffleScrambled1D(1, nSamples, lightNum, rng);
@@ -112,7 +111,8 @@ Spectrum SingleScatteringIntegrator::Li(const Scene *scene, const Renderer *rend
 
         // Compute single-scattering source term at _p_
         Lv += Tr * vr->Lve(p, w, ray.time);
-        Spectrum ss = vr->sigma_s(p, w, ray.time);
+        Spectrum ss = vr->Sigma_s(p, w, ray.time);
+        // printf("%f, ", ss.y());
         if (!ss.IsBlack() && scene->lights.size() > 0) {
             int nLights = scene->lights.size();
             int ln = min(Floor2Int(lightNum[sampOffset] * nLights),

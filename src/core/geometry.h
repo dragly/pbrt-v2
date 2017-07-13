@@ -38,6 +38,7 @@
 
 // core/geometry.h*
 #include "pbrt.h"
+using namespace std;
 
 // Geometry Declarations
 class Vector {
@@ -418,6 +419,14 @@ public:
         Vector d = pMax - pMin;
         return d.x * d.y * d.z;
     }
+    float Width() const { return pMax.x - pMin.x; }
+    float Height() const { return pMax.y - pMin.y; }
+    float Depth() const { return pMax.z - pMin.z; }
+    Vector Center() const {
+        Vector d = pMax - pMin;
+        d = d / 2;
+        return Vector(pMin) + d;
+    }
     int MaximumExtent() const {
         Vector diag = pMax - pMin;
         if (diag.x > diag.y && diag.x > diag.z)
@@ -447,11 +456,14 @@ public:
     bool operator!=(const BBox &b) const {
         return b.pMin != pMin || b.pMax != pMax;
     }
+    void Print() const {
+        printf("%2.2f %2.2f %2.2f \n %2.2f %2.2f %2.2f \n",
+               pMin.x, pMin.y, pMin.z, pMax.x, pMax.y, pMax.z);
+    }
 
     // BBox Public Data
     Point pMin, pMax;
 };
-
 
 
 // Geometry Inline Functions

@@ -48,6 +48,7 @@ public:
     bool CanIntersect() const;
     void Refine(vector<Reference<Shape> > &refined) const;
     BBox ObjectBound() const;
+    bool Projects(const Point &p, Point &ps, Normal &ns) const { return false; }
 private:
     // Heightfield Private Data
     float *z;

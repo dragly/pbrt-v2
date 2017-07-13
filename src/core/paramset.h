@@ -89,6 +89,7 @@ public:
     string FindTexture(const string &) const;
     const float *FindFloat(const string &, int *nItems) const;
     const int *FindInt(const string &, int *nItems) const;
+    const uchar *FindUChar(const string &, int *nItems) const;
     const bool *FindBool(const string &, int *nItems) const;
     const Point *FindPoint(const string &, int *nItems) const;
     const Vector *FindVector(const string &, int *nItems) const;
@@ -102,6 +103,7 @@ public:
 private:
     // ParamSet Private Data
     vector<Reference<ParamSetItem<bool> > > bools;
+    vector<Reference<ParamSetItem<uchar> > > uchars;
     vector<Reference<ParamSetItem<int> > > ints;
     vector<Reference<ParamSetItem<float> > > floats;
     vector<Reference<ParamSetItem<Point> > > points;

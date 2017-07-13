@@ -1,0 +1,1 @@
+/media/hd1/projects/debugging/qpbrt2.0/vsd/utilities/build/CMakeFiles/spriteConverter.dir

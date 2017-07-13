@@ -1,0 +1,28 @@
+Copyrights (C) Blue Brain Project / EPFL
+Author(s): Marwan Abdellah <marwan.abdellah@epfl.ch>
+
+==================
+ PBRT-VSD Worflow
+==================
+
+* Introduction
+----------------
+This workflow will generate pbrt configurations from the point sprite data to
+simulate the fluorescence detection by a two-dimensional sensor that's placed
+over the cortical surface.
+The resulting rendering reflects the fluorescence distribution on the sensor
+and also the total photon counts.
+
+* How to use
+----------------
+There are two approaches to run this workflow. You can use your own machine
+as a sequential solution, but it might be very slow for handling an entire
+time-series.
+To do that, update the configurations in the ./run.sh script and execute it.
+
+The second approach would allow you to use the cluster "Lugano only". It creates
+several batch script to handle a single time step per node. To do that, update the
+parameters in the script ./run_on_cluster.sh, and execute it.
+
+
+

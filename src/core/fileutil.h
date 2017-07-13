@@ -37,6 +37,9 @@
 #define PBRT_CORE_FILEUTIL_H
 
 #include <string>
+#include <stdint.h>
+#include <stdlib.h>
+
 using std::string;
 
 // Platform independent filename-handling functions.
@@ -46,6 +49,8 @@ string AbsolutePath(const string &filename);
 string ResolveFilename(const string &filename);
 string DirectoryContaining(const string &filename);
 void SetSearchDirectory(const string &dirname);
+void RemoveString(string& s, const string& p);
+
 
 #endif // PBRT_CORE_FILEUTIL_H
 

@@ -1,0 +1,1 @@
+/usr/bin/c++      CMakeFiles/spriteConverter.dir/Sprite.cpp.o CMakeFiles/spriteConverter.dir/SpriteConverter.cpp.o  -o spriteConverter -rdynamic 

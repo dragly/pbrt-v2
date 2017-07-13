@@ -124,7 +124,7 @@ Spectrum PathIntegrator::Li(const Scene *scene, const Renderer *renderer,
 
 
 PathIntegrator *CreatePathSurfaceIntegrator(const ParamSet &params) {
-    int maxDepth = params.FindOneInt("maxdepth", 5);
+    int maxDepth = params.FindOneInt("maxdepth", 1);
     return new PathIntegrator(maxDepth);
 }
 

@@ -43,26 +43,65 @@ DiffuseAreaLight::~DiffuseAreaLight() {
 
 
 DiffuseAreaLight::DiffuseAreaLight(const Transform &light2world,
+        const LightUnit &unit, const Spectrum &pe, const Spectrum &ee,
         const Spectrum &le, int ns, const Reference<Shape> &s)
     : AreaLight(light2world, ns) {
-    Lemit = le;
     shapeSet = new ShapeSet(s);
     area = shapeSet->Area();
+    lightUnit = unit;
+
+    // Verify a valid illumination input
+    if (pe.IsBlack() && ee.IsBlack() && le.IsBlack()) {
+        Warning("The light source doesn't emit any power");
+    }
+
+    // Compute radiometric units
+    switch (lightUnit) {
+    case LightUnit::Power:
+        Pemit = pe;
+        Eemit = Pemit / area;
+        Lemit = Eemit / M_PI;
+        break;
+    case LightUnit::Irradiance:
+        Eemit = ee;
+        Pemit = Eemit * area;
+        Lemit = Eemit / M_PI;
+        break;
+    case LightUnit::Radiance:
+    default:
+        Lemit = le;
+        Eemit = Lemit * M_PI;
+        Pemit = Eemit * area;
+        break;
+    }
+
+    PerformLaserTest();
 }
 
 
-Spectrum DiffuseAreaLight::Power(const Scene *) const {
-    return Lemit * area * M_PI;
+void DiffuseAreaLight::PerformLaserTest() {
+    isLaser = Lemit.VerifyLaser( laserWavelength, laserWavelengthIndex );
 }
 
 
 AreaLight *CreateDiffuseAreaLight(const Transform &light2world, const ParamSet &paramSet,
         const Reference<Shape> &shape) {
-    Spectrum L = paramSet.FindOneSpectrum("L", Spectrum(1.0));
+    Spectrum power = paramSet.FindOneSpectrum("power", Spectrum(0.0));
+    Spectrum E = paramSet.FindOneSpectrum("E", Spectrum(0.0));
+    Spectrum L = paramSet.FindOneSpectrum("L", Spectrum(0.0));
+    string units = paramSet.FindOneString("units", "radiance");
     Spectrum sc = paramSet.FindOneSpectrum("scale", Spectrum(1.0));
     int nSamples = paramSet.FindOneInt("nsamples", 1);
     if (PbrtOptions.quickRender) nSamples = max(1, nSamples / 4);
-    return new DiffuseAreaLight(light2world, L * sc, nSamples, shape);
+    LightUnit lightUnit;
+    if (units == "power")
+        lightUnit = Power;
+    else if (units == "irradiance")
+        lightUnit = Irradiance;
+    else
+        lightUnit = Radiance;
+    return new DiffuseAreaLight(light2world, lightUnit, power * sc, E * sc,
+        L * sc, nSamples, shape);
 }
 
 
