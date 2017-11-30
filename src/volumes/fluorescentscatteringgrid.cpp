@@ -97,7 +97,7 @@ void FluorescentScatteringGridDensity::ValidateData() const {
 }
 
 
-FluorescentScatteringGridDensity *CreateFluorescentGrid(const Transform &volume2world,
+FluorescentScatteringGridDensity *CreateFluorescentScatteringGrid(const Transform &volume2world,
         const ParamSet &params) {
     // Initialize common volume region parameters
     Spectrum sigma_a = params.FindOneSpectrum("sigma_a", 0.);

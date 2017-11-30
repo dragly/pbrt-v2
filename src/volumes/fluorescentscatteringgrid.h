@@ -223,7 +223,7 @@ private:
 };
 
 
-FluorescentScatteringGridDensity *CreateFluorescentGrid(const Transform &volume2world,
+FluorescentScatteringGridDensity *CreateFluorescentScatteringGrid(const Transform &volume2world,
         const ParamSet &params);
 
 #endif // PBRT_VOLUMES_FLUORESCENTSCATTERINGVOLUMEGRID_H

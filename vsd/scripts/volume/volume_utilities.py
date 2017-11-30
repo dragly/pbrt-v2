@@ -76,12 +76,9 @@ def write_volume_to_raw_file(volume, prefix):
 
     # write the raw (img) file that contains the data
     raw_file = open("%s.raw" % prefix, 'wb')
+    print("Writing volume to", prefix, ".raw")
     for i in range(0, volume_width):
         for j in range(0, volume_height):
             for k in range(0, volume_depth):
                 raw_file.write(struct.pack('B', volume[i][j][k]))
     raw_file.close()
-
-
-
-
