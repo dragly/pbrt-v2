@@ -10,24 +10,24 @@
 # For further detais, look at gluLookAt()
 # Looking always from top 
 # eyeX eyeY eyeZ pX pY pZ  normX normY normZ
-LookAt 0.0 2081.75641787 0.0  0.0 0.0 0.0  0.0 0.0 -1.0
+LookAt 0.0 1000 0.0  0.0 0.0 0.0  0.0 0.0 -1.0
 
 # Telecentric Lens System Camera
 Camera "telecentric"
-    "float screenwindow" [-1000 1000 -1000 1000]
-    "float focaldistance" [2000]
-    "float lensradius" [1000]
+    "float screenwindow" [-150 150 -150 150]
+    "float focaldistance" [1000]
+    "float lensradius" [10]
 
 ############################################
 # Film
 ############################################
 Film "image"
-    "integer xresolution" [256]
-    "integer yresolution" [256]
+    "integer xresolution" [512]
+    "integer yresolution" [512]
 
 # @Sampler #####################################################################
 Sampler "lowdiscrepancy"
-    "integer pixelsamples" [128]
+    "integer pixelsamples" [256]
 
 # @Volume Integrator ###########################################################
 #VolumeIntegrator "singlefluorescence"
@@ -49,7 +49,7 @@ WorldBegin
 ############################################
 Volume "vsdgrid"
         "string format" "raw" # assume it is raw for all the volumes for now
-        "string prefix" "/home/svenni/projects/photonflow/pbrt-v2/vsd/sample-data/data/output/results/0/0_volume"
+        "string prefix" "/home/svenni/projects/photonflow/pbrt-v2/scenes/microscopy/volume"
         ###################################################
         # Assign the optical properties of the medium here
         # sigma_a : absorption coefficient
@@ -59,7 +59,7 @@ Volume "vsdgrid"
         # The optical properties used for the camera-rendering
         # are fixed in the Li method of the vsd integrator.
         ###################################################
-        "color sigma_a" [0.20e-3 0.20e-3 0.20e-3]
+        "color sigma_a" [0.20e-6 0.20e-6 0.20e-6]
         "color sigma_s" [18e-3 18e-3 18e-3]
 
         # This value is never called in the simulation, code, so we will use it
